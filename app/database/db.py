@@ -101,11 +101,39 @@ def get_latest_emails(user_id, limit=5):
     ORDER BY received_at DESC
     LIMIT ?
     """, (user_id, limit))
-
     rows = cursor.fetchall()
-
-
     conn.commit()
     conn.close()
     return rows
+
+def get_last_sync(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT last_sync_time
+    FROM users
+    WHERE id = ?
+    """, (user_id,))
+
+    result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        return result[0]
+    return None
+
+
+def update_last_sync(user_id, timestamp):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    UPDATE users
+    SET last_sync_time = ?
+    WHERE id = ?
+    """, (timestamp, user_id))
+
+    conn.commit()
+    conn.close()
 
