@@ -124,16 +124,11 @@ def get_last_sync(user_id):
     return None
 
 
-def update_last_sync(user_id, timestamp):
-    conn = get_connection()
-    cursor = conn.cursor()
-
+def update_last_sync(cursor,user_id, timestamp):
     cursor.execute("""
     UPDATE users
     SET last_sync_time = ?
     WHERE id = ?
     """, (timestamp, user_id))
 
-    conn.commit()
-    conn.close()
 

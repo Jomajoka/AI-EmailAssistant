@@ -1,6 +1,6 @@
 import base64
 from email.utils import parsedate_to_datetime
-
+from datetime import timezone
 
 
 def get_body(payload):
@@ -17,11 +17,15 @@ def get_body(payload):
     return None
 
 
-def fetch_recent_emails(service, max_results=5):
-    results = service.users().messages().list(
-        userId='me',
-        maxResults=max_results
-    ).execute()
+def fetch_recent_emails(service, max_results=5, query=None):
+    
+    list_kwargs = {
+    "userId": "me",
+    "maxResults": max_results
+    }
+    if query:
+        list_kwargs["q"] = query
+    results = service.users().messages().list(**list_kwargs).execute()
 
     messages = results.get('messages', [])
 
@@ -48,7 +52,8 @@ def fetch_recent_emails(service, max_results=5):
 
         ##--Convert Gmail date header to ISO format--##
         parsed_dt = parsedate_to_datetime(date)
-        iso_date = parsed_dt.strftime("%Y-%m-%d %H:%M:%S")
+        parsed_dt_utc = parsed_dt.astimezone(timezone.utc)
+        iso_date = parsed_dt_utc.strftime("%Y-%m-%d %H:%M:%S")
         body = get_body(message['payload'])
 
         email_data = {
