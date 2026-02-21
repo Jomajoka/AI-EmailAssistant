@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual environment
+venv/
+env/
+
+# Database
+email_assistant.db
+
+#Google Auth    
+credentials.json
+token.json
+token.pickle
+
+# OS files
+.DS_Store
+Thumbs.db
