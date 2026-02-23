@@ -20,22 +20,49 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS emails (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    gmail_message_id TEXT NOT NULL,
+    thread_id TEXT,
+    sender TEXT,
+    subject TEXT,
+    body TEXT,
+    snippet TEXT,
+    received_at DATETIME,
+    has_attachment INTEGER DEFAULT 0,
+    labels TEXT,
+    summary TEXT,
+    category TEXT,
+    priority TEXT,
+    processed INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, gmail_message_id)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        gmail_message_id TEXT NOT NULL,
-        thread_id TEXT,
-        sender TEXT,
-        subject TEXT,
-        body TEXT,
-        snippet TEXT,
-        received_at DATETIME,
-        has_attachment INTEGER DEFAULT 0,
-        labels TEXT,
-        category TEXT,
-        priority_score REAL,
-        processed INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, gmail_message_id)
+        title TEXT NOT NULL,
+        description TEXT,
+        due_date TEXT,
+        priority TEXT,
+        status TEXT DEFAULT 'pending',
+        source_email_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS meetings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        meeting_date TEXT NOT NULL,
+        start_time TEXT,
+        end_time TEXT,
+        description TEXT,
+        source_email_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
