@@ -159,3 +159,63 @@ def update_last_sync(cursor,user_id, timestamp):
     """, (timestamp, user_id))
 
 
+def get_unprocessed_emails():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT id, subject, body
+    FROM emails
+    WHERE processed = 0
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def mark_email_processed(cursor, email_id):
+    cursor.execute("""
+    UPDATE emails
+    SET processed = 1
+    WHERE id = ?
+    """, (email_id,))
+
+
+def insert_task(cursor, task):
+    cursor.execute("""
+    INSERT INTO tasks (
+        title,
+        description,
+        due_date,
+        priority,
+        source_email_id
+    )
+    VALUES (?, ?, ?, ?, ?)
+    """, (
+        task["title"],
+        task.get("description"),
+        task.get("due_date"),
+        task.get("priority"),
+        task.get("source_email_id")
+    ))
+
+
+def insert_meeting(cursor, meeting):
+    cursor.execute("""
+    INSERT INTO meetings (
+        title,
+        meeting_date,
+        start_time,
+        end_time,
+        description,
+        source_email_id
+    )
+    VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        meeting["title"],
+        meeting["meeting_date"],
+        meeting.get("start_time"),
+        meeting.get("end_time"),
+        meeting.get("description"),
+        meeting.get("source_email_id")
+    ))

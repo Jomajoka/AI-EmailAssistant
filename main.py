@@ -59,15 +59,18 @@ for email_data in emails:
 ##-----Updating last_sync_time-----##
 if emails:
     latest_timestamp = max(email["received_at"] for email in emails)
-    update_last_sync(cursor, user_id, latest_timestamp)
-    print("Updated last_sync_time to:", latest_timestamp)
+
+    if not last_sync or latest_timestamp > last_sync:
+        update_last_sync(cursor, user_id, latest_timestamp)
+        print("Updated last_sync_time to:", latest_timestamp)
+    else:
+        print("No newer emails found. Sync unchanged.")
 else:
-    print("No new emails. Sync unchanged.")
+    print("No new emails returned by Gmail.")
 ##-------------------------------##
 
 conn.commit()
 conn.close()
-print(f"{len(emails)} emails processed.")
 ##----------------------------------------##
 
 
