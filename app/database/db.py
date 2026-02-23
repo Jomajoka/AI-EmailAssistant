@@ -164,7 +164,7 @@ def get_unprocessed_emails():
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT id, subject, body
+    SELECT id, subject, body, received_at
     FROM emails
     WHERE processed = 0
     """)

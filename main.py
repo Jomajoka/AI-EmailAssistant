@@ -18,6 +18,8 @@ from app.database.db import (
 )
 from app.services.gmail_service import fetch_recent_emails
 from app.auth.gmail_auth import get_gmail_service
+from app.services.agent_service import extract_email_intelligence
+from app.services.processing_service import process_unprocessed_emails
 init_db()
 
 
@@ -49,6 +51,7 @@ else:
     emails = fetch_recent_emails(service, max_results=10)
 ##------------------------#
 
+process_unprocessed_emails()
 
 ##--Store Emails--##
 conn = get_connection()
