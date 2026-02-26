@@ -1,0 +1,81 @@
+from fastapi import APIRouter, Depends
+from app.database.db import get_emails_for_user
+from app.database.db import get_connection
+from app.auth.dependencies import get_current_user
+from app.database.db import (
+    get_tasks_for_user,
+    get_meetings_for_user
+)
+
+router = APIRouter()
+
+
+@router.get("/tasks")
+def get_tasks(user_id: int = Depends(get_current_user)):
+    tasks = get_tasks_for_user(user_id)
+
+    return [
+        {
+            "id": t[0],
+            "title": t[1],
+            "description": t[2],
+            "due_date": t[3],
+            "priority": t[4],
+            "status": t[5],
+        }
+        for t in tasks
+    ]
+
+
+@router.get("/meetings")
+def get_meetings(user_id: int = Depends(get_current_user)):
+    meetings = get_meetings_for_user(user_id)
+
+    return [
+        {
+            "id": m[0],
+            "title": m[1],
+            "meeting_date": m[2],
+            "start_time": m[3],
+            "end_time": m[4],
+            "description": m[5],
+        }
+        for m in meetings
+    ]
+
+@router.get("/me")
+def get_me(user_id: int = Depends(get_current_user)):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT email_address, created_at, last_sync_time
+        FROM users
+        WHERE id = ?
+    """, (user_id,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return {
+        "user_id": user_id,
+        "email": row[0],
+        "created_at": row[1],
+        "last_sync_time": row[2]
+    }
+
+@router.get("/emails")
+def get_emails(user_id: int = Depends(get_current_user)):
+    emails = get_emails_for_user(user_id)
+
+    return [
+        {
+            "sender": e[0],
+            "subject": e[1],
+            "received_at": e[2],
+            "summary": e[3],
+            "category": e[4],
+            "priority": e[5],
+        }
+        for e in emails
+    ]

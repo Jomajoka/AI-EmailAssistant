@@ -3,7 +3,7 @@ DB_NAME = "email_assistant.db"
 
 
 def get_connection():
-    return sqlite3.connect(DB_NAME)
+    return sqlite3.connect(DB_NAME, check_same_thread=False)
 
 def init_db():
     conn = get_connection()
@@ -13,6 +13,10 @@ def init_db():
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email_address TEXT UNIQUE NOT NULL,
+        google_id TEXT UNIQUE,
+        access_token TEXT,
+        refresh_token TEXT,
+        token_expiry DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_sync_time DATETIME
     )
@@ -20,23 +24,23 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS emails (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    gmail_message_id TEXT NOT NULL,
-    thread_id TEXT,
-    sender TEXT,
-    subject TEXT,
-    body TEXT,
-    snippet TEXT,
-    received_at DATETIME,
-    has_attachment INTEGER DEFAULT 0,
-    labels TEXT,
-    summary TEXT,
-    category TEXT,
-    priority TEXT,
-    processed INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, gmail_message_id)
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        gmail_message_id TEXT NOT NULL,
+        thread_id TEXT,
+        sender TEXT,
+        subject TEXT,
+        body TEXT,
+        snippet TEXT,
+        received_at DATETIME,
+        has_attachment INTEGER DEFAULT 0,
+        labels TEXT,
+        summary TEXT,
+        category TEXT,
+        priority TEXT,
+        processed INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, gmail_message_id)
     )
     """)
 
@@ -159,15 +163,15 @@ def update_last_sync(cursor,user_id, timestamp):
     """, (timestamp, user_id))
 
 
-def get_unprocessed_emails():
+def get_unprocessed_emails(user_id):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
     SELECT id, subject, body, received_at
     FROM emails
-    WHERE processed = 0
-    """)
+    WHERE processed = 0 AND user_id = ?
+    """, (user_id,))
 
     rows = cursor.fetchall()
     conn.close()
@@ -219,3 +223,51 @@ def insert_meeting(cursor, meeting):
         meeting.get("description"),
         meeting.get("source_email_id")
     ))
+
+def get_tasks_for_user(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT t.id, t.title, t.description, t.due_date, t.priority, t.status
+        FROM tasks t
+        JOIN emails e ON t.source_email_id = e.id
+        WHERE e.user_id = ?
+        ORDER BY t.created_at DESC
+    """, (user_id,))
+
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def get_meetings_for_user(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT m.id, m.title, m.meeting_date, m.start_time, m.end_time, m.description
+        FROM meetings m
+        JOIN emails e ON m.source_email_id = e.id
+        WHERE e.user_id = ?
+        ORDER BY m.meeting_date ASC
+    """, (user_id,))
+
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def get_emails_for_user(user_id, limit=20):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT sender, subject, received_at, summary, category, priority
+        FROM emails
+        WHERE user_id = ?
+        ORDER BY received_at DESC
+        LIMIT ?
+    """, (user_id, limit))
+
+    rows = cursor.fetchall()
+    conn.close()
+    return rows

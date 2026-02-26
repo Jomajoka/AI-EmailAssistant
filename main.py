@@ -51,7 +51,7 @@ else:
     emails = fetch_recent_emails(service, max_results=10)
 ##------------------------#
 
-process_unprocessed_emails()
+#process_unprocessed_emails()
 
 ##--Store Emails--##
 conn = get_connection()

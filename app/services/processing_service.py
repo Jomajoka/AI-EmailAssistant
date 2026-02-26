@@ -9,7 +9,7 @@ from app.database.db import (
 from app.services.agent_service import extract_email_intelligence
 
 
-def process_unprocessed_emails():
+def process_unprocessed_emails(user_id):
     """
     Fetch all unprocessed emails,
     run LLM extraction,
@@ -17,7 +17,7 @@ def process_unprocessed_emails():
     mark them as processed.
     """
 
-    emails = get_unprocessed_emails()
+    emails = get_unprocessed_emails(user_id)
 
     if not emails:
         print("No emails to process.")
