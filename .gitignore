@@ -13,6 +13,7 @@ env/
 email_assistant.db
 
 #Google Auth    
+credentials_web.json
 credentials.json
 token.json
 token.pickle
