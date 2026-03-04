@@ -58,7 +58,7 @@ Rules:
 - Convert times to 24-hour HH:MM
 - If year missing, assume current year
 - If date cannot be determined, use null
-- Only extract real actionable tasks
+- Only extract real actionable tasks, be sure to distinguish promotional content from real tasks
 - Only extract meetings if clearly scheduled
 
 

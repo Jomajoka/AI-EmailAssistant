@@ -6,5 +6,5 @@ router = APIRouter()
 
 @router.get("/process")
 def process_emails(user_id: int = Depends(get_current_user)):
-    ##process_unprocessed_emails(user_id)
+    process_unprocessed_emails(user_id)
     return {"message": "Processing completed"}
