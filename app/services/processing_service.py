@@ -30,10 +30,10 @@ def process_unprocessed_emails(user_id):
 
 
     for email in emails:
-        email_id, subject, body, received_at = email
+        email_id, subject, body, received_at, sender = email ##Changed
 
         try:
-            result = extract_email_intelligence(subject, body, received_at)
+            result = extract_email_intelligence(subject, body, received_at, sender) ##Changed
 
             cursor.execute(
                 "DELETE FROM tasks WHERE source_email_id = ?",

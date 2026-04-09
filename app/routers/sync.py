@@ -16,7 +16,6 @@ router = APIRouter()
 @router.get("/sync")
 def sync_emails(user_id: int = Depends(get_current_user)):
     service = get_gmail_service(user_id)
-
     last_sync = get_last_sync(user_id)
 
     if last_sync:
@@ -27,6 +26,9 @@ def sync_emails(user_id: int = Depends(get_current_user)):
         emails = fetch_recent_emails(service, max_results=20, query=query)
     else:
         emails = fetch_recent_emails(service, max_results=10)
+
+    now = datetime.now(timezone.utc)
+    update_last_sync(user_id, now.strftime("%Y-%m-%d %H:%M:%S"))
 
     conn = get_connection()
     cursor = conn.cursor()

@@ -17,7 +17,7 @@ ALLOWED_CATEGORIES = [
 ALLOWED_PRIORITIES = ["High", "Medium", "Low"]
 
 
-def build_prompt(subject, body, reference_date):
+def build_prompt(subject, body, reference_date,sender):
     return f"""
 You are an AI assistant that extracts structured productivity information from emails.
 
@@ -60,6 +60,8 @@ Rules:
 - If date cannot be determined, use null
 - Only extract real actionable tasks, be sure to distinguish promotional content from real tasks
 - Only extract meetings if clearly scheduled
+- If participants (Organization or Individual or Team) are mentioned or sender is specified, format description like:
+  "Meeting with <participants> regarding <context>"
 
 
 Email Subject:
@@ -67,6 +69,9 @@ Email Subject:
 
 Email Body:
 {body}
+
+Email Sender:
+{sender}
 """
 
 
@@ -96,9 +101,9 @@ def validate_output(data):
     return data
 
 
-def extract_email_intelligence(subject, body, received_at):
+def extract_email_intelligence(subject, body, received_at,sender):
     reference_date = received_at.split(" ")[0]
-    prompt = build_prompt(subject, body, reference_date)
+    prompt = build_prompt(subject, body, reference_date,sender)
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",

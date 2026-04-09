@@ -155,12 +155,16 @@ def get_last_sync(user_id):
     return None
 
 
-def update_last_sync(cursor,user_id, timestamp):
+def update_last_sync(user_id, timestamp):
+    conn = get_connection()
+    cursor = conn.cursor()
     cursor.execute("""
     UPDATE users
     SET last_sync_time = ?
     WHERE id = ?
     """, (timestamp, user_id))
+    conn.commit()  
+    conn.close()
 
 
 def get_unprocessed_emails(user_id):
@@ -176,6 +180,7 @@ def get_unprocessed_emails(user_id):
     rows = cursor.fetchall()
     conn.close()
     return rows
+
 
 def mark_email_processed(cursor, email_id):
     cursor.execute("""
