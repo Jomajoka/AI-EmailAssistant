@@ -58,7 +58,7 @@ Rules:
 - Convert times to 24-hour HH:MM
 - If year missing, assume current year
 - If date cannot be determined, use null
-- Only extract real actionable tasks, be sure to distinguish promotional content from real tasks
+- Only extract real actionable tasks, be sure to distinguish promotional content from real tasks, check the email sender to see if they are a commercial entity and decide if it is promotional
 - Only extract meetings if clearly scheduled
 - If participants (Organization or Individual or Team) are mentioned or sender is specified, format description like:
   "Meeting with <participants> regarding <context>"

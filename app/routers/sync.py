@@ -18,35 +18,63 @@ def sync_emails(user_id: int = Depends(get_current_user)):
     service = get_gmail_service(user_id)
     last_sync = get_last_sync(user_id)
 
+    print("LAST SYNC:", last_sync)
+
+    # -------- Build query --------
     if last_sync:
         last_sync_dt = datetime.strptime(last_sync, "%Y-%m-%d %H:%M:%S")
         last_sync_dt = last_sync_dt.replace(tzinfo=timezone.utc)
-        unix_timestamp = int(last_sync_dt.timestamp())
-        query = f"after:{unix_timestamp}"
-        emails = fetch_recent_emails(service, max_results=20, query=query)
-    else:
-        emails = fetch_recent_emails(service, max_results=10)
 
-    now = datetime.now(timezone.utc)
-    update_last_sync(user_id, now.strftime("%Y-%m-%d %H:%M:%S"))
+        # 🔥 add buffer to avoid missing emails
+        unix_timestamp = int(last_sync_dt.timestamp()) - 60
+        query = f"after:{unix_timestamp}"
+    else:
+        query = "newer_than:7d"
+
+    print("QUERY:", query)
+
+    # -------- Fetch emails --------
+    emails = fetch_recent_emails(service, max_results=20, query=query)
+    print("EMAILS FETCHED:", len(emails))
 
     conn = get_connection()
     cursor = conn.cursor()
 
     new_count = 0
 
-    for email_data in emails:
-        insert_email(cursor, user_id, email_data)
-        new_count += 1
+    try:
+        # -------- Insert emails --------
+        for email_data in emails:
+            insert_email(cursor, user_id, email_data)
 
-    if emails:
-        latest_timestamp = max(email["received_at"] for email in emails)
+            # ✅ count only actual inserts
+            if cursor.rowcount > 0:
+                new_count += 1
 
-        if not last_sync or latest_timestamp > last_sync:
-            update_last_sync(cursor, user_id, latest_timestamp)
+        # -------- Update last sync (ALWAYS move forward) --------
+        now_dt = datetime.now(timezone.utc)
 
-    conn.commit()
-    conn.close()
+        if emails:
+            latest_timestamp = max(email["received_at"] for email in emails)
+            latest_dt = datetime.strptime(latest_timestamp, "%Y-%m-%d %H:%M:%S")
+            latest_dt = latest_dt.replace(tzinfo=timezone.utc)
+
+            # choose the later one (safe)
+            new_sync_dt = max(latest_dt, now_dt)
+        else:
+            new_sync_dt = now_dt
+
+        new_sync_str = new_sync_dt.strftime("%Y-%m-%d %H:%M:%S")
+        update_last_sync(cursor, user_id, new_sync_str)
+
+        conn.commit()
+
+    except Exception as e:
+        print("SYNC ERROR:", e)
+        raise
+
+    finally:
+        conn.close()
 
     return {
         "message": "Sync completed",
