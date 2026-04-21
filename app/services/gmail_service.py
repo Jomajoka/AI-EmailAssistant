@@ -57,15 +57,15 @@ def fetch_recent_emails(service, max_results=5, query=None):
         body = get_body(message['payload'])
 
         email_data = {
-            "gmail_message_id": msg['id'],
-            "thread_id": message.get('threadId'),
-            "sender": sender,
-            "subject": subject,
-            "body": body,
-            "snippet": message.get('snippet'),
-            "received_at": iso_date,
-            "has_attachment": 1 if 'parts' in message['payload'] else 0,
-            "labels": str(message.get('labelIds'))
+        "gmail_message_id": msg['id'],
+        "thread_id": message.get('threadId'),
+        "sender": sender,
+        "subject": subject,
+        "body": body,
+        "snippet": message.get('snippet'),
+        "received_at": iso_date,
+        "has_attachment": True if 'parts' in message['payload'] else False,
+        "labels": str(message.get('labelIds'))
         }
 
         email_list.append(email_data)

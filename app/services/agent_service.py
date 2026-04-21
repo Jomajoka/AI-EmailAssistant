@@ -3,6 +3,7 @@ import json
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -76,13 +77,22 @@ Email Sender:
 
 
 def clean_json_response(text):
-    # Remove markdown fences if present
     text = text.strip()
 
-    if text.startswith("```"):
-        text = text.split("```")[1]
+    # Remove markdown fences like ```json or ```
+    text = re.sub(r"```[a-zA-Z]*", "", text)
+    text = text.replace("```", "")
 
-    return text.strip()
+    # 🔥 Remove leading "json" if present
+    if text.lower().startswith("json"):
+        text = text[4:].strip()
+
+    # Extract first JSON object
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        return match.group(0)
+
+    return text
 
 
 def validate_output(data):
@@ -102,7 +112,10 @@ def validate_output(data):
 
 
 def extract_email_intelligence(subject, body, received_at,sender):
-    reference_date = received_at.split(" ")[0]
+    if isinstance(received_at, datetime):
+        reference_date = received_at.strftime("%Y-%m-%d")
+    else:
+        reference_date = received_at.split(" ")[0]
     prompt = build_prompt(subject, body, reference_date,sender)
 
     headers = {
@@ -129,6 +142,8 @@ def extract_email_intelligence(subject, body, received_at,sender):
 
     result_text = response.json()["choices"][0]["message"]["content"]
     cleaned = clean_json_response(result_text)
+
+    print("🔍 CLEANED JSON:", cleaned)
 
     try:
         parsed = json.loads(cleaned)

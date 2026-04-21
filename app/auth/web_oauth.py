@@ -16,7 +16,7 @@ def get_gmail_service(user_id: int):
     cursor.execute("""
         SELECT access_token, refresh_token, token_expiry
         FROM users
-        WHERE id = ?
+        WHERE id = %s
     """, (user_id,))
 
     row = cursor.fetchone()
@@ -40,23 +40,27 @@ def get_gmail_service(user_id: int):
         scopes=SCOPES,
     )
 
-    # Check expiry
+    # Handle expiry
     if token_expiry:
-        expiry_dt = datetime.strptime(token_expiry, "%Y-%m-%d %H:%M:%S")
+        # Postgres may return datetime directly
+        if isinstance(token_expiry, str):
+            expiry_dt = datetime.strptime(token_expiry, "%Y-%m-%d %H:%M:%S")
+        else:
+            expiry_dt = token_expiry
+
         creds.expiry = expiry_dt
 
     # Auto refresh if expired
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
 
-        # Save new token + expiry
         cursor.execute("""
             UPDATE users
-            SET access_token = ?, token_expiry = ?
-            WHERE id = ?
+            SET access_token = %s, token_expiry = %s
+            WHERE id = %s
         """, (
             creds.token,
-            creds.expiry.strftime("%Y-%m-%d %H:%M:%S"),
+            creds.expiry,
             user_id
         ))
 

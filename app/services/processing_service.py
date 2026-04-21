@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.database.db import (
     get_connection,
     get_unprocessed_emails,
@@ -28,28 +30,34 @@ def process_unprocessed_emails(user_id):
 
     processed_count = 0
 
-
     for email in emails:
-        email_id, subject, body, received_at, sender = email ##Changed
+        email_id, subject, body, received_at, sender = email
 
         try:
-            result = extract_email_intelligence(subject, body, received_at, sender) ##Changed
+            received_at_str = (
+                            received_at.strftime("%Y-%m-%d %H:%M:%S")
+                            if isinstance(received_at, datetime)
+                            else received_at
+            )
+            result = extract_email_intelligence(subject, body, received_at_str, sender) 
 
+            # ✅ DELETE tasks
             cursor.execute(
-                "DELETE FROM tasks WHERE source_email_id = ?",
+                "DELETE FROM tasks WHERE source_email_id = %s",
                 (email_id,)
             )
 
+            # ✅ DELETE meetings
             cursor.execute(
-                "DELETE FROM meetings WHERE source_email_id = ?",
+                "DELETE FROM meetings WHERE source_email_id = %s",
                 (email_id,)
             )
 
-            # Update email summary/category/priority
+            # ✅ UPDATE emails
             cursor.execute("""
                 UPDATE emails
-                SET summary = ?, category = ?, priority = ?
-                WHERE id = ?
+                SET summary = %s, category = %s, priority = %s
+                WHERE id = %s
             """, (
                 result["summary"],
                 result["category"],

@@ -51,7 +51,7 @@ def get_me(user_id: int = Depends(get_current_user)):
     cursor.execute("""
         SELECT email_address, created_at, last_sync_time
         FROM users
-        WHERE id = ?
+        WHERE id = %s
     """, (user_id,))
 
     row = cursor.fetchone()

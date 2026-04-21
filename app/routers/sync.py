@@ -22,16 +22,16 @@ def sync_emails(user_id: int = Depends(get_current_user)):
 
     # -------- Build query --------
     if last_sync:
-        last_sync_dt = datetime.strptime(last_sync, "%Y-%m-%d %H:%M:%S")
-        last_sync_dt = last_sync_dt.replace(tzinfo=timezone.utc)
+        last_sync_dt = (
+            datetime.strptime(last_sync, "%Y-%m-%d %H:%M:%S")
+            if isinstance(last_sync, str)
+            else last_sync
+        )
 
-        # 🔥 add buffer to avoid missing emails
         unix_timestamp = int(last_sync_dt.timestamp()) - 60
         query = f"after:{unix_timestamp}"
     else:
         query = "newer_than:7d"
-
-    print("QUERY:", query)
 
     # -------- Fetch emails --------
     emails = fetch_recent_emails(service, max_results=20, query=query)
