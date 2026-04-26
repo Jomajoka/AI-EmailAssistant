@@ -5,7 +5,7 @@ from googleapiclient.discovery import build
 from datetime import datetime
 from app.database.db import get_connection
 from fastapi.responses import JSONResponse
-
+from fastapi.responses import RedirectResponse
 
 router = APIRouter()
 
@@ -104,7 +104,7 @@ def auth_callback(request: Request, code: str, state: str):
     conn.close()
 
     request.session["user_id"] = user_id
-    return {"message": f"Authenticated as {email}"}
+    return RedirectResponse("http://localhost:3000")
 
 @router.get("/logout")
 def logout(request: Request):
