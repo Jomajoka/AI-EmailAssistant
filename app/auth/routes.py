@@ -1,35 +1,54 @@
 from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
-from datetime import datetime
 from app.database.db import get_connection
-from fastapi.responses import JSONResponse
-from fastapi.responses import RedirectResponse
+import os
+import json
+import tempfile
 
 router = APIRouter()
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8000/auth/callback")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
-# IMPORTANT: This must match Google Cloud redirect URI
-REDIRECT_URI = "http://localhost:8000/auth/callback"
-
-WEB_CLIENT_FILE = "credentials_web.json"
-
+def get_flow(state=None):
+    credentials_json = os.getenv("GOOGLE_CREDENTIALS")
+    
+    if credentials_json:
+        # Production — load from environment variable
+        credentials_dict = json.loads(credentials_json)
+        if state:
+            return Flow.from_client_config(
+                credentials_dict,
+                scopes=SCOPES,
+                state=state,
+                redirect_uri=REDIRECT_URI,
+            )
+        return Flow.from_client_config(
+            credentials_dict,
+            scopes=SCOPES,
+            redirect_uri=REDIRECT_URI,
+        )
+    else:
+        # Local development — load from file
+        if state:
+            return Flow.from_client_secrets_file(
+                "credentials_web.json",
+                scopes=SCOPES,
+                state=state,
+                redirect_uri=REDIRECT_URI,
+            )
+        return Flow.from_client_secrets_file(
+            "credentials_web.json",
+            scopes=SCOPES,
+            redirect_uri=REDIRECT_URI,
+        )
 
 @router.get("/login")
 def login(request: Request):
-
-    if request.session.get("oauth_state"):
-        print("State already exists, not regenerating")
-    else:
-        print("Generating new OAuth state")
-
-    flow = Flow.from_client_secrets_file(
-        WEB_CLIENT_FILE,
-        scopes=SCOPES,
-        redirect_uri=REDIRECT_URI,
-    )
+    flow = get_flow()
 
     authorization_url, state = flow.authorization_url(
         access_type="offline",
@@ -53,13 +72,7 @@ def auth_callback(request: Request, code: str, state: str):
     if not stored_state or stored_state != state:
         return {"error": "Invalid OAuth state"}
 
-    flow = Flow.from_client_secrets_file(
-        WEB_CLIENT_FILE,
-        scopes=SCOPES,
-        state=state,
-        redirect_uri=REDIRECT_URI,
-    )
-
+    flow = get_flow(state=state)
     flow.fetch_token(code=code)
     credentials = flow.credentials
 
@@ -104,7 +117,8 @@ def auth_callback(request: Request, code: str, state: str):
     conn.close()
 
     request.session["user_id"] = user_id
-    return RedirectResponse("http://localhost:3000")
+    return RedirectResponse(FRONTEND_URL)
+
 
 @router.get("/logout")
 def logout(request: Request):
