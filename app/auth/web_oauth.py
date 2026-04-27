@@ -3,10 +3,24 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from datetime import datetime
 from app.database.db import get_connection
+import os
+import json
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 WEB_CLIENT_FILE = "credentials_web.json"
+
+
+def _get_google_config():
+    credentials_json = os.getenv("GOOGLE_CREDENTIALS")
+
+    if credentials_json:
+        return json.loads(credentials_json)
+
+    # fallback for local development
+    with open("credentials_web.json", "r") as f:
+        return json.load(f)
+
 
 
 def get_gmail_service(user_id: int):
@@ -31,15 +45,20 @@ def get_gmail_service(user_id: int):
         conn.close()
         raise Exception("User has not authenticated via Web OAuth")
 
+    config = _get_google_config()
+
     creds = Credentials(
         token=access_token,
         refresh_token=refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
-        client_id=_get_client_id(),
-        client_secret=_get_client_secret(),
+        client_id=config["web"]["client_id"],
+        client_secret=config["web"]["client_secret"],
         scopes=SCOPES,
     )
 
+    if not refresh_token:
+        raise Exception("No refresh token available. User must re-authenticate.")
+    
     # Handle expiry
     if token_expiry:
         # Postgres may return datetime directly
@@ -74,14 +93,8 @@ def get_gmail_service(user_id: int):
 
 
 def _get_client_id():
-    import json
-    with open(WEB_CLIENT_FILE, "r") as f:
-        data = json.load(f)
-    return data["web"]["client_id"]
+    return _get_google_config()["web"]["client_id"]
 
 
 def _get_client_secret():
-    import json
-    with open(WEB_CLIENT_FILE, "r") as f:
-        data = json.load(f)
-    return data["web"]["client_secret"]
+    return _get_google_config()["web"]["client_secret"]
