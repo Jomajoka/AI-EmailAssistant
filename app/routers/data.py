@@ -6,6 +6,11 @@ from app.database.db import (
     get_tasks_for_user,
     get_meetings_for_user
 )
+from app.database.db import update_task_status
+from pydantic import BaseModel
+
+class TaskStatusUpdate(BaseModel):
+    status: str
 
 router = APIRouter()
 
@@ -25,6 +30,16 @@ def get_tasks(user_id: int = Depends(get_current_user)):
         }
         for t in tasks
     ]
+
+
+@router.patch("/tasks/{task_id}/status")
+def patch_task_status(
+    task_id: int,
+    body: TaskStatusUpdate,
+    user_id: int = Depends(get_current_user)
+):
+    update_task_status(task_id, body.status)
+    return { "message": "Task updated successfully" }
 
 
 @router.get("/meetings")

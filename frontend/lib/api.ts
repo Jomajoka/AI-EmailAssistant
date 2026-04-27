@@ -20,7 +20,18 @@ export const login = () => {
 };
 
 //logout
-export const logout = () => request("/logout");
+export const logout = async () => {
+  await request("/logout");
+  window.location.href = "/login";
+};
+
+export const updateTaskStatus = (taskId: number, status: string) =>
+  request(`/tasks/${taskId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+
 
 // Emails
 export const getEmails = () => request("/emails");
@@ -39,3 +50,5 @@ export const processEmails = () => request("/process");
 
 // Current user
 export const getMe = () => request("/me");
+
+

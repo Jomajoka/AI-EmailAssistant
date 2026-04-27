@@ -5,14 +5,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def get_connection():
+'''def get_connection():
     return psycopg2.connect(
-        host="localhost",
+        host=os.getenv("DB_HOST", "localhost"),
         database=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         port=os.getenv("DB_PORT")
-    )
+    )'''
+
+def get_connection():
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
 
 def init_db():
     conn = get_connection()
@@ -269,6 +272,20 @@ def get_meetings_for_user(user_id):
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+def update_task_status(task_id: int, status: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE tasks
+        SET status = %s
+        WHERE id = %s
+    """, (status, task_id))
+
+    conn.commit()
+    conn.close()
+
 
 def get_emails_for_user(user_id, limit=20):
     conn = get_connection()
