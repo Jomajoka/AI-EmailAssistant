@@ -10,7 +10,7 @@ import tempfile
 router = APIRouter()
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8000/auth/callback")
+REDIRECT_URI = os.getenv("REDIRECT_URI")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 def get_flow(state=None):
@@ -57,7 +57,7 @@ def login(request: Request):
 
     request.session["oauth_state"] = state
     print("Stored state:", state)
-
+    print("Using REDIRECT_URI:", REDIRECT_URI)
     return RedirectResponse(authorization_url)
 
 
