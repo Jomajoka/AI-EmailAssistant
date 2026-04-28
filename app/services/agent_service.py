@@ -39,6 +39,7 @@ Use this exact schema:
       "title": "string",
       "description": "string or null",
       "due_date": "YYYY-MM-DD or null"
+      "priority": "High | Medium | Low" 
     }}
   ],
   "meetings": [
@@ -107,6 +108,10 @@ def validate_output(data):
 
     if not isinstance(data.get("meetings"), list):
         data["meetings"] = []
+
+    for task in data["tasks"]:
+        if task.get("priority") not in ALLOWED_PRIORITIES:
+            task["priority"] = "Medium"
 
     return data
 

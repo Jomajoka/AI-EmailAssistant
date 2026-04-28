@@ -19,13 +19,15 @@ def get_body(payload):
 
 def fetch_recent_emails(service, max_results=5, query=None):
     
+    default_query = "in:inbox -category:promotions -category:social"
+    
+    combined_query = f"{default_query} {query}" if query else default_query  # 👈 preserves any custom query passed in
+
     list_kwargs = {
-    "userId": "me",
-    "maxResults": max_results
+        "userId": "me",
+        "maxResults": max_results,
+        "q": combined_query  
     }
-    if query:
-        list_kwargs["q"] = query
-    results = service.users().messages().list(**list_kwargs).execute()
 
     messages = results.get('messages', [])
 
