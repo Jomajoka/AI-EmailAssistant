@@ -28,7 +28,7 @@ def fetch_recent_emails(service, max_results=5, query=None):
         "maxResults": max_results,
         "q": combined_query  
     }
-
+    results = service.users().messages().list(**list_kwargs).execute()  
     messages = results.get('messages', [])
 
     email_list = []
