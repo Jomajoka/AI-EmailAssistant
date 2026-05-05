@@ -21,7 +21,7 @@ def fetch_recent_emails(service, max_results=5, query=None):
     
     default_query = "in:inbox -category:promotions -category:social"
     
-    combined_query = f"{default_query} {query}" if query else default_query  # 👈 preserves any custom query passed in
+    combined_query = f"{default_query} {query}" if query else default_query  
 
     list_kwargs = {
         "userId": "me",
