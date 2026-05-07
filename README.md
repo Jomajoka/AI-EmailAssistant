@@ -1,199 +1,196 @@
 # EmailAssist
 
-EmailAssist is an AI-powered email productivity assistant that connects to a user's Gmail account, syncs recent inbox messages, analyzes them with an LLM, and presents structured summaries, tasks, meetings, categories, and priorities in a web dashboard.
+EmailAssist is an AI-powered productivity platform that converts unstructured Gmail inbox data into structured, actionable insights such as tasks, meetings, summaries, and priority classifications.
 
-The project is built as a full-stack application with a FastAPI backend, a PostgreSQL database, Google OAuth/Gmail API integration, OpenRouter-powered LLM processing, and a Next.js frontend.
+The system integrates Google OAuth 2.0, the Gmail API, Large Language Models, and a distributed full-stack architecture to provide an intelligent productivity workflow through a unified dashboard.
 
-## Features
+---
 
-- Google OAuth 2.0 sign-in with session-based authentication
-- Gmail inbox sync using the Gmail API with read-only access
-- Incremental email fetching based on the user's last sync timestamp
-- Duplicate prevention for previously synced Gmail messages
-- LLM-based email analysis through OpenRouter
-- Structured extraction of:
-  - concise email summaries
-  - email categories
-  - priority levels
-  - actionable tasks
-  - scheduled meetings
-- Dashboard view for emails, tasks, and meetings
-- Task status updates with pending/completed tracking
-- Task filtering by priority and due-date status
-- Meeting list and calendar views
-- User-scoped API access so each authenticated user only sees their own data
-
-## System Architecture
+# Architecture
 
 ```text
-Gmail Account
-    |
-    | Google OAuth + Gmail API
-    v
-FastAPI Backend
-    |
-    | stores users, email metadata, tasks, meetings
-    v
-PostgreSQL Database
-    |
-    | unprocessed emails
-    v
-OpenRouter LLM Processing
-    |
-    | structured summaries, priorities, tasks, meetings
-    v
-Next.js Dashboard
+Frontend (Next.js / Vercel)
+        │
+        │ REST APIs + Session Cookies
+        ▼
+Backend (FastAPI / Render)
+        │
+        ├── Gmail API Integration
+        ├── OAuth Authentication
+        ├── LLM Processing Pipeline
+        └── Encryption + Validation Layer
+        ▼
+PostgreSQL Database (Supabase)
 ```
 
-## Tech Stack
+---
 
-**Backend**
+# Core Features
 
-- Python
-- FastAPI
-- PostgreSQL
-- psycopg2
-- Google OAuth / Gmail API
-- OpenRouter Chat Completions API
-- Starlette session middleware
+* Google OAuth 2.0 authentication with secure session-based login
+* Gmail inbox synchronization using the Gmail API
+* Incremental email ingestion with duplicate prevention
+* AI-powered extraction of:
 
-**Frontend**
+  * email summaries
+  * priorities
+  * categories
+  * actionable tasks
+  * meetings and scheduling information
+* Task tracking with status management
+* Meeting dashboard and calendar-style organization
+* User-scoped data isolation across all APIs
+* Application-level encryption for sensitive user data
+* Distributed deployment across independently hosted frontend/backend services
 
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- Framer Motion
-- React Hot Toast
+---
 
-## Backend Functionality
+# Tech Stack
 
-The backend exposes authenticated REST endpoints for login, Gmail sync, AI processing, and data retrieval. It stores OAuth tokens, refreshes expired Gmail access tokens, and keeps email/task/meeting data scoped to the signed-in user.
+## Frontend
 
-Email syncing fetches recent inbox messages from Gmail, normalizes key metadata such as sender, subject, received time, snippet, labels, and body content, then stores new messages in PostgreSQL.
+* Next.js
+* React
+* TypeScript
+* Tailwind CSS
+* Framer Motion
 
-The processing service sends unprocessed email content to an LLM and validates the response against a strict JSON structure. The extracted intelligence is saved back to the database, and related tasks or meetings are created from the result.
+## Backend
 
-## Frontend Functionality
+* FastAPI
+* PostgreSQL
+* psycopg2
+* Google OAuth 2.0
+* Gmail API
+* OpenRouter API
+* Starlette Session Middleware
 
-The frontend provides a dashboard for authenticated users to interact with their email intelligence data. Users can:
+## AI / Processing
 
-- sign in with Google
-- sync new emails
-- process emails with the AI pipeline
-- view recent analyzed emails
-- review extracted tasks
-- mark tasks as completed or reopen them
-- filter tasks by priority and due-date category
-- view extracted meetings as a list or on a calendar
-- access profile/session actions
+* Mistral LLM via OpenRouter
+* Structured JSON extraction pipeline
+* Schema validation and retry handling
 
-## API Endpoints
+## Deployment
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/` | API health/root message |
-| `GET` | `/login` | Starts Google OAuth sign-in |
-| `GET` | `/auth/callback` | Handles the Google OAuth callback |
-| `GET` | `/logout` | Clears the authenticated session |
-| `GET` | `/me` | Returns the current authenticated user |
-| `GET` | `/sync` | Syncs new Gmail messages for the current user |
-| `GET` | `/process` | Processes unprocessed emails with the LLM |
-| `GET` | `/emails` | Returns recent analyzed emails |
-| `GET` | `/tasks` | Returns extracted tasks |
-| `PATCH` | `/tasks/{task_id}/status` | Updates a task's status |
-| `GET` | `/meetings` | Returns extracted meetings |
+* Frontend: Vercel
+* Backend: Render
+* Database: Supabase PostgreSQL
 
-## Database Tables
+---
 
-The application initializes the following PostgreSQL tables:
+# System Design
 
-- `users`: authenticated users, Google account identifiers, OAuth tokens, token expiry, and sync timestamps
-- `emails`: Gmail message metadata, body content, summaries, categories, priorities, and processing state
-- `tasks`: actionable tasks extracted from emails
-- `meetings`: scheduled meetings extracted from emails
+The platform follows a distributed client-server architecture where the frontend communicates with a FastAPI backend through authenticated REST APIs.
 
-Tasks and meetings are associated with their source email, which keeps data tied to the authenticated user.
+The backend:
 
-## Environment Variables
+* manages Google OAuth authentication
+* synchronizes Gmail data
+* processes emails through an LLM pipeline
+* validates extracted structured outputs
+* stores processed productivity data in PostgreSQL
 
-Create a `.env` file in the project root for the backend:
+The frontend provides a productivity-focused dashboard for interacting with extracted tasks, meetings, and AI-generated summaries.
 
-```env
-DATABASE_URL=postgresql://user:password@host:port/database
-SECRET_KEY=your_session_secret
-REDIRECT_URI=http://localhost:8000/auth/callback
-FRONTEND_URL=http://localhost:3000
-OPENROUTER_API_KEY=your_openrouter_api_key
-LLM_MODEL=your_openrouter_model_name
-```
+---
 
-For local Google OAuth development, place `credentials_web.json` in the project root. For deployment, Google OAuth credentials can be provided through the `GOOGLE_CREDENTIALS` environment variable as JSON.
+# AI Extraction Pipeline
 
-Create `frontend/.env.local` for the frontend:
+The email processing pipeline converts unstructured email content into structured productivity entities.
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+### Processing Flow
 
-## Running Locally
+1. Gmail emails are fetched through the Gmail API
+2. Email metadata and content are normalized
+3. Sensitive fields are encrypted before database storage
+4. Unprocessed emails are passed to the LLM pipeline
+5. The LLM generates structured JSON outputs
+6. Backend validation ensures schema correctness
+7. Tasks, meetings, summaries, and priorities are persisted to PostgreSQL
 
-### 1. Backend
+### Reliability Features
 
-```bash
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn run_api:app --reload --port 8000
-```
+* Strict schema-constrained JSON generation
+* Retry handling for malformed outputs
+* Validation before database insertion
+* Duplicate email prevention
+* Incremental sync using last-sync timestamps
 
-The backend will be available at `http://localhost:8000`.
+---
 
-### 2. Frontend
+# Security Design
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+The system implements multiple security layers for authentication and sensitive data protection.
 
-The frontend will be available at `http://localhost:3000`.
+## Authentication
 
-## Typical Workflow
+* Google OAuth 2.0 login
+* Session-based authentication
+* HttpOnly secure cookies
+* SameSite cookie policies
+* Cross-origin CORS configuration
 
-1. Sign in through Google OAuth.
-2. Click **Sync** to fetch recent Gmail messages.
-3. Click **Process** to run AI analysis on unprocessed emails.
-4. Review summaries, priorities, tasks, and meetings in the dashboard.
-5. Track task completion and switch between meeting list/calendar views.
+## Data Protection
 
-## Project Structure
+Application-level Fernet encryption is used for sensitive fields including:
+
+* Gmail OAuth access tokens
+* Gmail refresh tokens
+* email sender fields
+* email subjects
+* raw email bodies
+
+Encrypted values are decrypted only when required for authenticated processing or Gmail API access.
+
+---
+
+# Database Design
+
+The database follows a relational structure centered around user-owned email data.
+
+## Core Relationships
 
 ```text
-EmailAssist/
-  app/
-    api.py                  # FastAPI app factory and middleware setup
-    auth/                   # OAuth, session, and Gmail credential handling
-    database/               # PostgreSQL connection and query helpers
-    routers/                # API route modules
-    services/               # Gmail sync and LLM processing services
-  frontend/
-    app/                    # Next.js app routes
-    components/dashboard/   # Dashboard UI components
-    hooks/                  # Frontend data-loading and action hooks
-    lib/                    # API client helpers
-    types/                  # Shared frontend TypeScript types
-  run_api.py                # ASGI entry point
-  requirements.txt          # Python dependencies
+User
+ └── Emails
+      ├── Tasks
+      └── Meetings
 ```
 
-## Security Notes
+### Relationship Model
 
-- Gmail access is requested with the read-only scope.
-- OAuth session state is validated during callback handling.
-- Session cookies are configured differently for local and production environments.
-- Secrets, OAuth credentials, token files, and environment files should not be committed to version control.
+* One user → many emails
+* One email → many tasks
+* One email → many meetings
 
-## Resume Summary
+Tasks and meetings are always linked through their source email, ensuring strict user-level data isolation and traceability.
 
-EmailAssist demonstrates a full-stack AI workflow that combines OAuth authentication, third-party API integration, database-backed synchronization, LLM-based structured extraction, and a responsive productivity dashboard.
+---
+
+# Engineering Challenges Solved
+
+* Secure cross-domain authentication between Vercel-hosted frontend and Render-hosted backend
+* Reliable handling of inconsistent LLM outputs through validation and retry mechanisms
+* Protection of sensitive OAuth credentials and email data using application-level encryption
+* Incremental Gmail synchronization without duplicate ingestion
+* Managing asynchronous API-heavy workflows efficiently using FastAPI async architecture
+
+---
+
+# API Overview
+
+| Method | Endpoint             | Description                 |
+| ------ | -------------------- | --------------------------- |
+| GET    | `/login`             | Start Google OAuth login    |
+| GET    | `/auth/callback`     | Handle OAuth callback       |
+| GET    | `/sync`              | Sync Gmail messages         |
+| GET    | `/process`           | Run AI processing pipeline  |
+| GET    | `/emails`            | Retrieve analyzed emails    |
+| GET    | `/tasks`             | Retrieve extracted tasks    |
+| PATCH  | `/tasks/{id}/status` | Update task status          |
+| GET    | `/meetings`          | Retrieve extracted meetings |
+
+---
+
+
