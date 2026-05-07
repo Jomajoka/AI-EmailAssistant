@@ -2,6 +2,7 @@ import sqlite3
 import psycopg2
 import os
 from dotenv import load_dotenv
+from app.security.encryption import decrypt_value, encrypt_value
 load_dotenv()
 
 
@@ -108,6 +109,11 @@ def get_or_create_user(email_address):
 
 
 def insert_email(cursor, user_id, email_data):
+    sender = encrypt_value(email_data["sender"])
+    subject = encrypt_value(email_data["subject"])
+    body = encrypt_value(email_data["body"])
+    snippet = encrypt_value(email_data["snippet"])
+
     cursor.execute("""
     INSERT INTO emails (
         user_id,
@@ -127,10 +133,10 @@ def insert_email(cursor, user_id, email_data):
         user_id,
         email_data["gmail_message_id"],
         email_data["thread_id"],
-        email_data["sender"],
-        email_data["subject"],
-        email_data["body"],
-        email_data["snippet"],
+        sender,
+        subject,
+        body,
+        snippet,
         email_data["received_at"],
         email_data["has_attachment"],
         email_data["labels"]
@@ -151,7 +157,15 @@ def get_latest_emails(user_id, limit=5):
 
     rows = cursor.fetchall()
     conn.close()
-    return rows
+    return [
+        (
+            decrypt_value(sender),
+            decrypt_value(subject),
+            received_at,
+            decrypt_value(body),
+        )
+        for sender, subject, received_at, body in rows
+    ]
 
 
 def get_last_sync(user_id):
@@ -190,7 +204,16 @@ def get_unprocessed_emails(user_id):
 
     rows = cursor.fetchall()
     conn.close()
-    return rows
+    return [
+        (
+            email_id,
+            decrypt_value(subject),
+            decrypt_value(body),
+            received_at,
+            decrypt_value(sender),
+        )
+        for email_id, subject, body, received_at, sender in rows
+    ]
 
 
 def mark_email_processed(cursor, email_id):
@@ -301,4 +324,14 @@ def get_emails_for_user(user_id, limit=20):
 
     rows = cursor.fetchall()
     conn.close()
-    return rows
+    return [
+        (
+            decrypt_value(sender),
+            decrypt_value(subject),
+            received_at,
+            summary,
+            category,
+            priority,
+        )
+        for sender, subject, received_at, summary, category, priority in rows
+    ]

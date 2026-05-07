@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from app.database.db import get_connection
+from app.security.encryption import encrypt_value
 import os
 import json
 import tempfile
@@ -81,6 +82,8 @@ def auth_callback(request: Request, code: str, state: str):
 
     email = profile["emailAddress"]
     google_id = email
+    access_token = encrypt_value(credentials.token)
+    refresh_token = encrypt_value(credentials.refresh_token) if credentials.refresh_token else None
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -96,13 +99,13 @@ def auth_callback(request: Request, code: str, state: str):
         VALUES (%s, %s, %s, %s, %s)
         ON CONFLICT(email_address) DO UPDATE SET
             access_token = EXCLUDED.access_token,
-            refresh_token = EXCLUDED.refresh_token,
+            refresh_token = COALESCE(EXCLUDED.refresh_token, users.refresh_token),
             token_expiry = EXCLUDED.token_expiry
     """, (
         email,
         google_id,
-        credentials.token,
-        credentials.refresh_token or None,
+        access_token,
+        refresh_token,
         credentials.expiry.strftime("%Y-%m-%d %H:%M:%S")
     ))
 

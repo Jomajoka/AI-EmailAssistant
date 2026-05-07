@@ -6,9 +6,11 @@ from app.routers.process import router as process_router
 from app.routers.data import router as data_router
 from app.auth.routes import router as auth_router
 from app.routers.sync import router as sync_router
+from app.security.encryption import validate_encryption_config
 import os
 
 def create_app():
+    validate_encryption_config()
     init_db()
 
     app = FastAPI()

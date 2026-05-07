@@ -3,6 +3,7 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from datetime import datetime
 from app.database.db import get_connection
+from app.security.encryption import decrypt_value, encrypt_value
 import os
 import json
 
@@ -40,6 +41,8 @@ def get_gmail_service(user_id: int):
         raise Exception("User not found")
 
     access_token, refresh_token, token_expiry = row
+    access_token = decrypt_value(access_token)
+    refresh_token = decrypt_value(refresh_token)
 
     if not access_token:
         conn.close()
@@ -57,6 +60,7 @@ def get_gmail_service(user_id: int):
     )
 
     if not refresh_token:
+        conn.close()
         raise Exception("No refresh token available. User must re-authenticate.")
     
     # Handle expiry
@@ -78,7 +82,7 @@ def get_gmail_service(user_id: int):
             SET access_token = %s, token_expiry = %s
             WHERE id = %s
         """, (
-            creds.token,
+            encrypt_value(creds.token),
             creds.expiry,
             user_id
         ))
