@@ -80,8 +80,8 @@ def process_unprocessed_emails(user_id):
 
             processed_count += 1
 
-        except Exception as e:
-            print(f"Failed to process email ID {email_id}: {e}")
+        except Exception:
+            print(f"Failed to process email ID {email_id}")
             continue
 
     conn.commit()

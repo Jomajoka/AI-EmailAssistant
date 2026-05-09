@@ -1,5 +1,20 @@
-from fastapi import Request, HTTPException
+import secrets
+
+from fastapi import Header, HTTPException, Request
 from app.database.db import get_connection
+
+
+CSRF_SESSION_KEY = "csrf_token"
+
+
+def get_or_create_csrf_token(request: Request) -> str:
+    token = request.session.get(CSRF_SESSION_KEY)
+
+    if not token:
+        token = secrets.token_urlsafe(32)
+        request.session[CSRF_SESSION_KEY] = token
+
+    return token
 
 
 def get_current_user(request: Request) -> int:
@@ -21,3 +36,13 @@ def get_current_user(request: Request) -> int:
         raise HTTPException(status_code=401, detail="User not found")
 
     return user_id
+
+
+def verify_csrf_token(
+    request: Request,
+    csrf_token: str | None = Header(default=None, alias="X-CSRF-Token")
+) -> None:
+    expected_token = request.session.get(CSRF_SESSION_KEY)
+
+    if not expected_token or not csrf_token or not secrets.compare_digest(expected_token, csrf_token):
+        raise HTTPException(status_code=403, detail="Invalid CSRF token")

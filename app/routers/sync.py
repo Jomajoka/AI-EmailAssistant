@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from datetime import datetime, timezone
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, verify_csrf_token
 from app.auth.web_oauth import get_gmail_service
 from app.database.db import (
     get_connection,
@@ -13,12 +13,15 @@ from app.services.gmail_service import fetch_recent_emails
 router = APIRouter()
 
 
-@router.get("/sync")
-def sync_emails(user_id: int = Depends(get_current_user)):
+@router.post("/sync")
+def sync_emails(
+    user_id: int = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf_token)
+):
     service = get_gmail_service(user_id)
     last_sync = get_last_sync(user_id)
 
-    print("LAST SYNC:", last_sync)
+    print(f"Starting email sync for user_id={user_id}")
 
     # -------- Build query --------
     if last_sync:
@@ -35,7 +38,7 @@ def sync_emails(user_id: int = Depends(get_current_user)):
 
     # -------- Fetch emails --------
     emails = fetch_recent_emails(service, max_results=20, query=query)
-    print("EMAILS FETCHED:", len(emails))
+    print(f"Emails fetched for user_id={user_id}: {len(emails)}")
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -69,8 +72,8 @@ def sync_emails(user_id: int = Depends(get_current_user)):
 
         conn.commit()
 
-    except Exception as e:
-        print("SYNC ERROR:", e)
+    except Exception:
+        print(f"Sync failed for user_id={user_id}")
         raise
 
     finally:

@@ -8,6 +8,7 @@ type User = {
   email: string;
   created_at: string;
   last_sync_time: string;
+  csrf_token: string;
 };
 
 type Props = {

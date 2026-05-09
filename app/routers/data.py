@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from app.database.db import get_emails_for_user
 from app.database.db import get_connection
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, get_or_create_csrf_token, verify_csrf_token
 from app.database.db import (
     get_tasks_for_user,
     get_meetings_for_user
@@ -10,7 +12,7 @@ from app.database.db import update_task_status
 from pydantic import BaseModel
 
 class TaskStatusUpdate(BaseModel):
-    status: str
+    status: Literal["pending", "completed"]
 
 router = APIRouter()
 
@@ -36,9 +38,14 @@ def get_tasks(user_id: int = Depends(get_current_user)):
 def patch_task_status(
     task_id: int,
     body: TaskStatusUpdate,
-    user_id: int = Depends(get_current_user)
+    user_id: int = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf_token)
 ):
-    update_task_status(task_id, body.status)
+    updated = update_task_status(task_id, body.status, user_id)
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Task not found")
+
     return { "message": "Task updated successfully" }
 
 
@@ -59,7 +66,7 @@ def get_meetings(user_id: int = Depends(get_current_user)):
     ]
 
 @router.get("/me")
-def get_me(user_id: int = Depends(get_current_user)):
+def get_me(request: Request, user_id: int = Depends(get_current_user)):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -76,7 +83,8 @@ def get_me(user_id: int = Depends(get_current_user)):
         "user_id": user_id,
         "email": row[0],
         "created_at": row[1],
-        "last_sync_time": row[2]
+        "last_sync_time": row[2],
+        "csrf_token": get_or_create_csrf_token(request)
     }
 
 @router.get("/emails")

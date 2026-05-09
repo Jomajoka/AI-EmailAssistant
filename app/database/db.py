@@ -296,7 +296,7 @@ def get_meetings_for_user(user_id):
     conn.close()
     return rows
 
-def update_task_status(task_id: int, status: str):
+def update_task_status(task_id: int, status: str, user_id: int):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -304,10 +304,15 @@ def update_task_status(task_id: int, status: str):
         UPDATE tasks
         SET status = %s
         WHERE id = %s
-    """, (status, task_id))
+        AND source_email_id IN (
+            SELECT id FROM emails WHERE user_id = %s
+        )
+    """, (status, task_id, user_id))
 
+    updated = cursor.rowcount > 0
     conn.commit()
     conn.close()
+    return updated
 
 
 def get_emails_for_user(user_id, limit=20):

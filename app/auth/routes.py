@@ -2,11 +2,13 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
+from app.auth.dependencies import verify_csrf_token
 from app.database.db import get_connection
 from app.security.encryption import encrypt_value
 import os
 import json
 import tempfile
+from fastapi import Depends
 
 router = APIRouter()
 
@@ -57,18 +59,14 @@ def login(request: Request):
     )
 
     request.session["oauth_state"] = state
-    print("Stored state:", state)
-    print("Using REDIRECT_URI:", REDIRECT_URI)
+    print("OAuth login started")
     return RedirectResponse(authorization_url)
 
 
 @router.get("/auth/callback")
 def auth_callback(request: Request, code: str, state: str):
-    print("Callback route triggered")
+    print("OAuth callback received")
     stored_state = request.session.get("oauth_state")
-
-    print("Stored state:", stored_state)
-    print("Returned state:", state)
 
     if not stored_state or stored_state != state:
         return {"error": "Invalid OAuth state"}
@@ -123,7 +121,7 @@ def auth_callback(request: Request, code: str, state: str):
     return RedirectResponse(FRONTEND_URL)
 
 
-@router.get("/logout")
-def logout(request: Request):
+@router.post("/logout")
+def logout(request: Request, _csrf: None = Depends(verify_csrf_token)):
     request.session.clear()
     return JSONResponse({"message": "Logged out successfully"})

@@ -1,9 +1,23 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+let csrfToken: string | null = null;
+
+function isUnsafeMethod(method: string) {
+  return !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
+}
 
 async function request(endpoint: string, options: RequestInit = {}) {
+  const method = options.method || "GET";
+  const headers = new Headers(options.headers);
+
+  if (csrfToken && isUnsafeMethod(method)) {
+    headers.set("X-CSRF-Token", csrfToken);
+  }
+
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     credentials: "include", 
     ...options,
+    method,
+    headers,
   });
 
   if (!res.ok) {
@@ -21,7 +35,8 @@ export const login = () => {
 
 //logout
 export const logout = async () => {
-  await request("/logout");
+  await request("/logout", { method: "POST" });
+  csrfToken = null;
   window.location.href = "/login";
 };
 
@@ -43,12 +58,16 @@ export const getTasks = () => request("/tasks");
 export const getMeetings = () => request("/meetings");
 
 // Sync
-export const syncEmails = () => request("/sync");
+export const syncEmails = () => request("/sync", { method: "POST" });
 
 // Process
-export const processEmails = () => request("/process");
+export const processEmails = () => request("/process", { method: "POST" });
 
 // Current user
-export const getMe = () => request("/me");
+export const getMe = async () => {
+  const user = await request("/me");
+  csrfToken = user.csrf_token;
+  return user;
+};
 
 

@@ -10,6 +10,7 @@ type User = {
   email: string;
   created_at: string;
   last_sync_time: string;
+  csrf_token: string;
 };
 
 
@@ -44,17 +45,6 @@ export function useDashboard() {
     }
     };
 
-
-  const fetchUser = async () => {
-    try {
-      const data = await getMe();
-      setUser(data);
-    } catch {
-      router.push("/login");
-    } finally {
-      setCheckingAuth(false);
-    }
-  };
 
   const fetchEmails = async () => {
     try { setEmails(await getEmails()); } catch (err) { console.error(err); }
@@ -101,11 +91,41 @@ export function useDashboard() {
     };
 
   useEffect(() => {
-    fetchUser();
-    fetchEmails();
-    fetchMeetings();
-    fetchTasks();
-  }, []);
+    let active = true;
+
+    getMe()
+      .then((data) => {
+        if (active) setUser(data);
+      })
+      .catch(() => {
+        if (active) router.push("/login");
+      })
+      .finally(() => {
+        if (active) setCheckingAuth(false);
+      });
+
+    getEmails()
+      .then((data) => {
+        if (active) setEmails(data);
+      })
+      .catch((err) => console.error(err));
+
+    getMeetings()
+      .then((data) => {
+        if (active) setMeetings(data);
+      })
+      .catch((err) => console.error(err));
+
+    getTasks()
+      .then((data) => {
+        if (active) setTasks(data);
+      })
+      .catch((err) => console.error(err));
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   return { user, emails, meetings, tasks, loading, checkingAuth, handleSync, handleProcess, handleToggleTask };
 }
